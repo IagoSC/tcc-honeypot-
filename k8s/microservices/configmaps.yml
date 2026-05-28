@@ -1,0 +1,49 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: juice-shop-microservices
+  labels:
+    name: juice-shop-microservices
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: juice-shop-microservices
+data:
+  NODE_ENV: "development" # TODO: Change to "production" for production deployments
+  PORT: "3000"
+  DB_HOST: "database"
+  DB_PORT: "5432"
+  DB_NAME: "juiceshop"
+  DB_USER: "juiceshop"
+  FILE_STORAGE_URL: "http://file-storage:9000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secrets
+  namespace: juice-shop-microservices
+type: Opaque
+stringData:
+  DB_PASSWORD: "juiceshop"
+  JWT_SECRET: "your-super-secret-jwt-key-change-me"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: database-config
+  namespace: juice-shop-microservices
+data:
+  POSTGRES_DB: "juiceshop"
+  POSTGRES_USER: "juiceshop"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: database-secrets
+  namespace: juice-shop-microservices
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: "juiceshop"

@@ -1,0 +1,6 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: juice-shop-microservices
+nodes:
+  - role: control-plane
+  - role: worker # No need for portMapping as single entrypoint is via LoadBalancer (frontend service)

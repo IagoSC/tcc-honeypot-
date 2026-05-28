@@ -1,0 +1,76 @@
+---
+# Database Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+  namespace: juice-shop-microservices
+  labels:
+    app: database
+spec:
+  type: ClusterIP
+  selector:
+    app: database
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+---
+# Backend API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api
+  namespace: juice-shop-microservices
+  labels:
+    app: backend-api
+spec:
+  type: ClusterIP
+  selector:
+    app: backend-api
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+---
+# File Storage Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: file-storage
+  namespace: juice-shop-microservices
+  labels:
+    app: file-storage
+spec:
+  type: ClusterIP
+  selector:
+    app: file-storage
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+    name: api
+  - port: 9001
+    targetPort: 9001
+    protocol: TCP
+    name: console
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: juice-shop-microservices
+  labels:
+    app: frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http

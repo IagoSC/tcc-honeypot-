@@ -1,0 +1,16 @@
+{
+    "keepSettings": {
+        "type": 1,
+        "amount": 2
+    },
+    "auditFilename": "logs/audit.json",
+    "hashType": "md5",
+    "extension": "",
+    "files": [
+        {
+            "date": 1769175774502,
+            "name": "/home/iagosc/tcc/services/backend-api/logs/access.log.2026-01-23",
+            "hash": "9dd5060c8e653c3873fc8eb511cc6c6e"
+        }
+    ]
+}

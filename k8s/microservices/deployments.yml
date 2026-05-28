@@ -1,0 +1,240 @@
+---
+# Database Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  namespace: juice-shop-microservices
+  labels:
+    app: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - configMapRef:
+            name: database-config
+        - secretRef:
+            name: database-secrets
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      - name: tcpdump
+        image: alpine:3.19
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apk add --no-cache tcpdump >/dev/null 2>&1
+          tcpdump -i any -s 0 -U -w /captures/traffic.pcap -C 100 -W 10 -Z nobody
+        securityContext:
+          capabilities:
+            add: ["NET_RAW", "NET_ADMIN"]
+        volumeMounts:
+        - name: capture-storage
+          mountPath: /captures
+      volumes:
+      - name: postgres-data
+        emptyDir: {}
+      - name: capture-storage
+        emptyDir: {}
+---
+# Backend API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api
+  namespace: juice-shop-microservices
+  labels:
+    app: backend-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-api
+  template:
+    metadata:
+      labels:
+        app: backend-api
+    spec:
+      containers:
+      - name: backend-api
+        image: juice-shop-backend-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        securityContext:
+          runAsUser: 0 # TODO: Is this a security issue?
+        envFrom:
+        - configMapRef:
+            name: backend-config
+        env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=512"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: backend-secretssss
+              key: DB_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: JWT_SECRET
+        livenessProbe: # TODO Check if this works / is needed
+          httpGet:
+            path: /rest/admin/application-version
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /rest/admin/application-version
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      - name: tcpdump
+        image: alpine:3.19
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apk add --no-cache tcpdump >/dev/null 2>&1
+          tcpdump -i any -s 0 -U -w /captures/traffic.pcap -C 100 -W 10 -Z nobody
+        securityContext:
+          capabilities:
+            add: ["NET_RAW", "NET_ADMIN"]
+        volumeMounts:
+        - name: capture-storage
+          mountPath: /captures
+      volumes:
+      - name: capture-storage
+        emptyDir: {}
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: juice-shop-microservices
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: juice-shop-frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      - name: tcpdump
+        image: alpine:3.19
+        command:
+        - /bin/sh
+        - -c
+        - |
+          apk add --no-cache tcpdump >/dev/null 2>&1
+          tcpdump -i any -s 0 -U -w /captures/traffic.pcap -C 100 -W 10 -Z nobody
+        securityContext:
+          capabilities:
+            add: ["NET_RAW", "NET_ADMIN"]
+        volumeMounts:
+        - name: capture-storage
+          mountPath: /captures
+      volumes:
+      - name: capture-storage
+        emptyDir: {}
+---
+# File Storage Deployment
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: file-storage
+#   namespace: juice-shop-microservices
+#   labels:
+#     app: file-storage
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: file-storage
+#   template:
+#     metadata:
+#       labels:
+#         app: file-storage
+#     spec:
+#       containers:
+#       - name: minio
+#         image: minio/minio:latest
+#         args:
+#         - server
+#         - /data
+#         - --console-address
+#         - ":9001"
+#         ports:
+#         - containerPort: 9000
+#           name: api
+#         - containerPort: 9001
+#           name: console
+#         env:
+#         - name: MINIO_ROOT_USER
+#           value: "minioadmin"
+#         - name: MINIO_ROOT_PASSWORD
+#           value: "minioadmin"
+#         volumeMounts:
+#         - name: storage-data
+#           mountPath: /data
+#         resources:
+#           requests:
+#             memory: "256Mi"
+#             cpu: "250m"
+#           limits:
+#             memory: "512Mi"
+#             cpu: "500m"
+#       volumes:
+#       - name: storage-data
+#         emptyDir: {}
+---
